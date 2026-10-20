@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Mừng Ngày Phụ Nữ Việt Nam 20/10</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Three.js & OrbitControls CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Montserrat:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      user-select: none;
+      -webkit-user-select: none;
+      box-sizing: border-box;
+    }
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #030108;
+      font-family: 'Montserrat', sans-serif;
+    }
+
+    /* WebGL Canvas Background */
+    #webgl-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      touch-action: none;
+    }
+
+    /* Phông nền Tinh Vân Multi-color Nebula Gradient chuẩn hình ảnh */
+    .nebula-bg {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background: 
+        radial-gradient(circle at 20% 25%, rgba(16, 185, 129, 0.28) 0%, transparent 45%),
+        radial-gradient(circle at 80% 70%, rgba(59, 130, 246, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(219, 39, 119, 0.35) 0%, transparent 55%),
+        radial-gradient(circle at 75% 20%, rgba(245, 158, 11, 0.25) 0%, transparent 42%),
+        radial-gradient(circle at 30% 80%, rgba(139, 92, 246, 0.28) 0%, transparent 48%);
+      filter: blur(45px);
+    }
+
+    /* Hiệu ứng Chữ Kim Tuyến (Glitter Sparkle Text) */
+    .glitter-text {
+      font-family: 'Dancing Script', cursive;
+      background: linear-gradient(
+        90deg, 
+        #ffe6fa 0%, 
+        #ff99dd 20%, 
+        #ffffff 40%, 
+        #ffb3ec 60%, 
+        #ffe6fa 80%,
+        #ffffff 100%
+      );
+      background-size: 200% auto;
+      color: transparent;
+      -webkit-background-clip: text;
+      background-clip: text;
+      animation: glitterShine 2.5s linear infinite;
+      filter: drop-shadow(0 0 12px rgba(255, 182, 219, 0.8)) drop-shadow(0 0 25px rgba(255, 105, 180, 0.5));
+    }
+
+    @keyframes glitterShine {
+      0% { background-position: 0% center; }
+      100% { background-position: 200% center; }
+    }
+
+    /* Hiệu ứng Trái tim bay liên tục từ dưới lên */
+    #floating-hearts-container {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 99990;
+    }
+
+    .floating-heart-particle {
+      position: absolute;
+      bottom: -40px;
+      color: #ff69b4;
+      font-size: 16px;
+      pointer-events: none;
+      animation: floatUpHeart 5s linear forwards;
+      filter: drop-shadow(0 0 6px rgba(255, 105, 180, 0.8));
+    }
+
+    @keyframes floatUpHeart {
+      0% {
+        transform: translateY(0) scale(0.6) rotate(0deg);
+        opacity: 0;
+      }
+      15% {
+        opacity: 0.95;
+      }
+      85% {
+        opacity: 0.95;
+      }
+      100% {
+        transform: translateY(-115vh) scale(1.3) rotate(360deg);
+        opacity: 0;
+      }
+    }
+
+    /* -------------------------------------------------------------------------
+       PHONG BÌ THƯ ĐỎ HỒNG 3D VỚI NẮP TAM GIÁC GẬP ĐÚNG NẾP (MỞ UP / ĐÓNG DOWN)
+       ------------------------------------------------------------------------- */
+    .envelope-perspective {
+      perspective: 1000px;
+    }
+
+    .envelope-box {
+      position: relative;
+      width: 290px;
+      height: 195px;
+      background: linear-gradient(135deg, #be123c 0%, #881337 100%);
+      border-radius: 12px;
+      box-shadow: 0 0 45px rgba(225, 29, 72, 0.65), 0 25px 60px rgba(0, 0, 0, 0.85);
+      border: 1.5px solid rgba(255, 192, 215, 0.85);
+      transform-style: preserve-3d;
+      transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.5s ease;
+    }
+
+    @media (min-width: 640px) {
+      .envelope-box {
+        width: 370px;
+        height: 240px;
+      }
+    }
+
+    /* Nắp tam giác gập chuẩn nếp từ mép trên */
+    .envelope-flap-triangle {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 60%;
+      background: linear-gradient(180deg, #f43f5e 0%, #be123c 100%);
+      clip-path: polygon(0 0, 50% 100%, 100% 0);
+      transform-origin: top center;
+      transform: rotateX(0deg);
+      transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 25;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+      border-top: 1px solid rgba(255,255,255,0.3);
+    }
+
+    .envelope-flap-triangle.open {
+      transform: rotateX(180deg);
+      z-index: 5;
+    }
+
+    /* Mặt trước túi phong bì */
+    .envelope-pocket {
+      position: absolute;
+      inset: 0;
+      clip-path: polygon(0 0, 50% 46%, 100% 0, 100% 100%, 0 100%);
+      background: linear-gradient(180deg, #e11d48 0%, #9f1239 100%);
+      border-radius: 0 0 12px 12px;
+      z-index: 20;
+      pointer-events: none;
+      box-shadow: inset 0 2px 10px rgba(0,0,0,0.3);
+    }
+
+    /* Lá thư xem trước bên trong phong bì */
+    .letter-paper-preview {
+      position: absolute;
+      bottom: 12px;
+      left: 16px;
+      right: 16px;
+      height: 150px;
+      background: #fff5f8;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      border: 1px dashed #f472b6;
+      z-index: 10;
+      transition: transform 0.65s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      pointer-events: none;
+    }
+
+    .letter-paper-preview.slide-up {
+      transform: translateY(-120px) scale(1.04);
+      z-index: 30;
+    }
+
+    .float-anim {
+      animation: floating 3.5s ease-in-out infinite;
+    }
+    @keyframes floating {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-10px) rotate(0.8deg); }
+    }
+
+    /* Custom Scrollbar cho bức thư */
+    .custom-scroll::-webkit-scrollbar {
+      width: 5px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: rgba(255, 192, 203, 0.2);
+      border-radius: 4px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: rgba(244, 114, 182, 0.7);
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="bg-black text-white relative">
+
+  <!-- Tinh vân phông nền đa sắc -->
+  <div class="nebula-bg"></div>
+
+  <!-- Container chứa hiệu ứng trái tim nhỏ bay liên tục từ dưới lên -->
+  <div id="floating-hearts-container"></div>
+
+  <!-- WebGL Three.js Canvas -->
+  <canvas id="webgl-canvas"></canvas>
+
+  <!-- LỚP GIAO DIỆN OVERLAY (UI STAGES) -->
+  <div id="ui-layer" class="relative z-20 w-full h-full pointer-events-none flex flex-col justify-between items-center p-4 pt-6 sm:pt-8">
+    
+    <!-- LỜI NHẮC TRỰC TIẾP TRÊN MÀN HÌNH -->
+    <div id="hint-banner" class="mt-2 text-center pointer-events-auto cursor-pointer transition-all duration-500 hover:scale-105 active:scale-95">
+      <div id="hint-box" class="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-pink-500/20 border border-pink-400/40 backdrop-blur-md shadow-lg shadow-pink-500/20">
+        <span class="animate-bounce text-pink-300 text-sm">✨</span>
+        <span id="hint-text" class="text-pink-100 text-xs sm:text-sm font-medium tracking-wide">
+          Chạm Vào Màn Hình Để Bắt Đầu
+        </span>
+        <span class="animate-bounce text-pink-300 text-sm">✨</span>
+      </div>
+      <p id="hint-subtext" class="text-[11px] text-pink-300/80 tracking-wider font-light mt-1.5 drop-shadow">
+        (Xoay 360° & Phóng to / Thu nhỏ tự do)
+      </p>
+    </div>
+
+    <!-- BƯỚC 3: HIỆN CHỮ KIM TUYẾN LẤP LÁNH -->
+    <div id="glitter-stage" class="absolute inset-0 flex flex-col items-center justify-center opacity-0 transition-opacity duration-700 pointer-events-none px-4 pt-10 z-30">
+      
+      <!-- STAGE 3A: Tên Người Gửi -->
+      <div id="stage-3a" class="flex flex-col items-center justify-center transition-all duration-700 pointer-events-none">
+        <p class="text-xs sm:text-sm text-pink-300/80 uppercase tracking-widest mb-1 pointer-events-none">Gửi tặng từ</p>
+        <h2 id="display-sender" class="glitter-text text-4xl sm:text-6xl md:text-7xl font-bold text-center py-2 pointer-events-none">
+          <!-- Nguyễn Đoàn Quốc Anh -->
+        </h2>
+      </div>
+
+      <!-- STAGE 3B: Tên Người Gửi & Tên Người Nhận -->
+      <div id="stage-3b" class="hidden flex-col items-center justify-center transition-all duration-700 opacity-0 pointer-events-none">
+        <p class="text-xs sm:text-sm text-pink-300/90 uppercase tracking-widest mb-1 drop-shadow pointer-events-none">
+          Gửi tặng từ <span id="display-sender-sub" class="font-bold text-pink-200"></span>
+        </p>
+
+        <h1 id="display-title" class="glitter-text text-4xl sm:text-6xl md:text-7xl font-bold text-center py-1.5 pointer-events-none">
+         
+        </h1>
+
+        <!-- Biểu tượng Siêu Cầu Trái Tim Nhỏ Ở Tâm -->
+        <div class="my-3 relative flex items-center justify-center pointer-events-none">
+          <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-pink-500 via-purple-400 to-amber-200 p-0.5 shadow-lg shadow-pink-500/50 flex items-center justify-center">
+            <div class="w-full h-full bg-black/60 rounded-full backdrop-blur-sm flex items-center justify-center">
+              <span class="text-pink-200 text-2xl animate-pulse">💖</span>
+            </div>
+          </div>
+          <div class="absolute inset-0 border border-pink-300/60 rounded-full scale-125 rotate-45 border-dashed animate-spin"></div>
+        </div>
+
+        <h3 id="display-recipient" class="glitter-text text-3xl sm:text-5xl md:text-6xl font-bold text-center py-1.5 pointer-events-none">
+          <!-- Sơn Thị Niêm -->
+        </h3>
+
+        <!-- Nút Xem Thư Tình Yêu -->
+        <button onclick="startAutoOpenEnvelopeProcess()" class="mt-5 pointer-events-auto px-7 py-3 bg-gradient-to-r from-pink-500/40 via-rose-500/50 to-pink-500/40 hover:from-pink-500/60 hover:to-rose-500/70 border border-pink-400/80 rounded-full text-pink-100 font-medium text-sm sm:text-base tracking-wider backdrop-blur-md transition-all transform hover:scale-105 shadow-xl shadow-pink-500/40 active:scale-95 flex items-center gap-2 cursor-pointer z-40">
+          <span>💌</span> Xem Thư 
+        </button>
+      </div>
+
+    </div>
+
+    <!-- BƯỚC 4: PHONG THƯ TÌNH YÊU 3D ĐỎ HỒNG VỚI NẮP TAM GIÁC GẬP ĐÚNG NẾP -->
+    <div id="envelope-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center opacity-0 pointer-events-none transition-opacity duration-500 z-[99999] p-4">
+      
+      <!-- Nút đóng nhanh -->
+      <button onclick="autoCloseEnvelopeAndReturnToHeart(event)" class="absolute top-5 right-5 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 p-2.5 rounded-full backdrop-blur-md transition-colors pointer-events-auto cursor-pointer z-[100001] flex items-center justify-center text-lg w-10 h-10 border border-white/20">
+        ✕
+      </button>
+
+      <!-- VÙNG PHONG THƯ ĐỎ HỒNG 3D -->
+      <div id="envelope-wrapper" class="envelope-perspective pointer-events-none my-2 transition-all duration-500">
+        <div id="envelope-container" class="envelope-box float-anim flex flex-col items-center justify-center">
+          
+          <!-- Nắp tam giác phong bì gập chuẩn 3D -->
+          <div id="envelope-flap" class="envelope-flap-triangle"></div>
+          
+          <!-- Túi phong bì -->
+          <div class="envelope-pocket"></div>
+
+          <!-- Lá Thư Nhô Ra Bên Trong -->
+          <div id="inner-letter-preview" class="letter-paper-preview">
+            <span class="text-pink-600 font-['Dancing_Script'] text-xl font-bold">💌 Chúc Mừng 20/10</span>
+            <div class="w-12 h-0.5 bg-pink-300 rounded-full my-2"></div>
+            <p class="text-gray-500 text-[11px] font-['Montserrat'] text-center"
+            >Gửi Sơn Thị Niêm...</p>
+          </div>
+
+          <!-- Tem Trái Tim Niêm Phong ở Đỉnh Nắp Tam Giác -->
+          <div id="envelope-seal" class="absolute z-30 top-[45%] w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-gradient-to-tr from-rose-600 via-pink-500 to-amber-300 border-2 border-white/90 shadow-lg shadow-rose-500/50 flex items-center justify-center text-white text-lg sm:text-xl transition-all duration-500">
+            <span class="drop-shadow">♥</span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- TẤM THIỆP CHÚC MỪNG MỞ RA TỪ PHONG THƯ -->
+      <div id="letter-card" class="hidden relative w-full max-w-md bg-gradient-to-b from-pink-50 via-white to-pink-50 text-gray-800 rounded-3xl shadow-2xl p-6 sm:p-8 border border-pink-200/80 text-center transform transition-all duration-500 scale-90 opacity-0 pointer-events-auto z-[100000]">
+        
+        <!-- Nút đóng X góc thiệp -->
+        <button onclick="autoCloseEnvelopeAndReturnToHeart(event)" class="absolute top-4 right-4 text-pink-400 hover:text-pink-600 text-xl font-bold w-8 h-8 flex items-center justify-center rounded-full hover:bg-pink-100 transition-colors cursor-pointer">
+          ✕
+        </button>
+
+        <!-- Tiêu đề lá thư -->
+        <h3 id="card-header" class="font-['Dancing_Script'] text-3xl sm:text-4xl text-pink-600 font-bold mb-1">
+          <!-- Config Header -->
+        </h3>
+        
+        <div class="flex justify-center items-center gap-1.5 mb-3 text-pink-400 text-xs">
+          <span>🌸</span><span>•</span><span>🌸</span><span>•</span><span>🌸</span>
+        </div>
+
+        <!-- Nội dung chi tiết lá thư -->
+        <div id="card-body" class="font-['Dancing_Script'] text-lg sm:text-xl text-gray-700 leading-relaxed text-left whitespace-pre-line max-h-[48vh] overflow-y-auto px-2 my-4 custom-scroll">
+          <!-- Config Body -->
+        </div>
+
+        <!-- Chữ ký -->
+        <div id="card-footer" class="text-right font-['Dancing_Script'] text-xl sm:text-2xl font-bold text-pink-600 mt-3 pr-2">
+          <!-- Config Sign -->
+        </div>
+
+        <!-- Nút Đóng Thư (Gấp lại đút vào phong bì & trở về cảnh trái tim) -->
+        <button onclick="autoCloseEnvelopeAndReturnToHeart(event)" class="mt-5 w-full py-3 bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 hover:from-pink-600 hover:to-rose-600 text-white font-medium rounded-full shadow-lg shadow-pink-400/50 transition-all transform active:scale-95 flex items-center justify-center gap-2 cursor-pointer">
+          <span>Đóng thư & Trở về</span> ♡
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="text-white/40 text-[10px] sm:text-xs tracking-widest uppercase pb-1 pointer-events-none">
+      Vietnamese Women's Day ✨ 20/10
+    </div>
+  </div>
+
+  <script>
+    /* =========================================================================
+       1. CẤU HÌNH CONFIG TÊN & NỘI DUNG LỜI CHÚC
+       ========================================================================= */
+    const CONFIG = {
+      // Tên người gửi & Tên người nhận
+      senderName: "Nguyễn Đoàn Quốc Anh",
+      recipientName: "Sơn Thị Niêm",
+      loveText: "Tặng Chị",
+
+      // 3 dải chữ xoay nghiêng quanh Quả Cầu 3D
+      ringText1: "CHÚC MỪNG 20/10 💖 CHÚC MỪNG 20/10 💖 ",
+      ringText2: "CHÚC MỪNG 20/10 💖 CHÚC MỪNG 20/10 💖 ",
+      ringText3: "CHÚC MỪNG 20/10 💖 CHÚC MỪNG 20/10 💖 ",
+
+      // Nội dung Bức Thư Tình Yêu
+      letterTitle: "Chúc Mừng Ngày 20/10 💖",
+      letterBody: `Gửi chị - Sơn Thị Niêm,\n\nNhân ngày 20/10, em chúc chị luôn ngập tràn niềm vui, xinh đẹp và hạnh phúc nhất trên đời.\n\nMong rằng không chỉ riêng hôm nay, mà cả 365 ngày trong năm, mọi điều tốt đẹp, may mắn và hạnh phúc nhất sẽ luôn mỉm cười với chị.\n\nChúc cho mọi mong ước của chị đều sớm trở thành hiện thực!`,
+      letterSign: "- Nguyễn Đoàn Quốc Anh",
+
+      // Thời gian chờ tự động chuyển sang thông điệp người nhận (ms)
+      senderStayTime: 2800
+    };
+
+    /* =========================================================================
+       2. NẠP CẤU HÌNH VÀO DOM
+       ========================================================================= */
+    document.getElementById('display-sender').innerText = CONFIG.senderName;
+    document.getElementById('display-sender-sub').innerText = CONFIG.senderName;
+    document.getElementById('display-title').innerText = CONFIG.loveText;
+    document.getElementById('display-recipient').innerText = CONFIG.recipientName;
+    document.getElementById('card-header').innerText = CONFIG.letterTitle;
+    document.getElementById('card-body').innerText = CONFIG.letterBody;
+    document.getElementById('card-footer').innerText = CONFIG.letterSign;
+
+    /* =========================================================================
+       3. THREE.JS VŨ TRỤ 3D (QUẢ CẦU HOLOGAM GALAXY HỒNG RỰC RỠ CHUẨN MẪU)
+       ========================================================================= */
+    let scene, camera, renderer, controls;
+    let planetMesh, auraMesh;
+    let ringMeshes = [];
+    let particleSystem, heartParticleData = [];
+    let orbitLineNodes = [];
+    let currentStep = 1; // 1: Sphere, 2: Heart, 3: Text, 4: Envelope
+    let isTransitioning = false;
+    let floatingHeartInterval = null;
+
+    const canvas = document.getElementById('webgl-canvas');
+
+    function initThreeJS() {
+      scene = new THREE.Scene();
+      scene.fog = new THREE.FogExp2(0x030108, 0.001);
+
+      camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.set(0, 0, 24);
+
+      renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+      // OrbitControls - Cho phép kéo xoay 360 độ và thu phóng tự do
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.rotateSpeed = 0.8;
+      controls.zoomSpeed = 1.2;
+      controls.enableZoom = true;
+      controls.minDistance = 6;
+      controls.maxDistance = 60;
+
+      // Ánh sáng không gian vừa phải để không bị chói trắng
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.95);
+      scene.add(ambientLight);
+
+      const light1 = new THREE.PointLight(0xff2a85, 2.2, 70);
+      light1.position.set(15, 15, 15);
+      scene.add(light1);
+
+      const light2 = new THREE.PointLight(0x00e5ff, 1.8, 70);
+      light2.position.set(-15, -15, -15);
+      scene.add(light2);
+
+      // Khởi tạo các thành phần 3D
+      createSpaceStarfield();      // Hàng ngàn ngôi sao lấp lánh
+      createSpaceOrbitLines();     // Đường quỹ đạo chéo có các điểm sáng
+      createHolographicPlanet();  // Siêu cầu Holographic Galaxy Hồng Rực Rỡ
+      createTextRings();           // 3 Vòng chữ 3D
+      initHeartParticles();        // Trái tim hạt thiên hà hồng-tím-trắng (scale 0.42)
+
+      window.addEventListener('resize', onWindowResize);
+      setupGlobalInteractionListeners();
+
+      animate();
+    }
+
+    /* --- NỀN VŨ TRỤ SAO LẤP LÁNH --- */
+    function createSpaceStarfield() {
+      const count = 4500;
+      const geometry = new THREE.BufferGeometry();
+      const positions = new Float32Array(count * 3);
+      const colors = new Float32Array(count * 3);
+
+      const palette = [
+        new THREE.Color(0xffffff),
+        new THREE.Color(0xffb3ec),
+        new THREE.Color(0x80ffff),
+        new THREE.Color(0xffe680)
+      ];
+
+      for (let i = 0; i < count; i++) {
+        positions[i * 3] = (Math.random() - 0.5) * 180;
+        positions[i * 3 + 1] = (Math.random() - 0.5) * 180;
+        positions[i * 3 + 2] = (Math.random() - 0.5) * 180;
+
+        const c = palette[Math.floor(Math.random() * palette.length)];
+        colors[i * 3] = c.r;
+        colors[i * 3 + 1] = c.g;
+        colors[i * 3 + 2] = c.b;
+      }
+
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+      const material = new THREE.PointsMaterial({
+        size: 0.24,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.9
+      });
+
+      const stars = new THREE.Points(geometry, material);
+      scene.add(stars);
+    }
+
+    /* --- ĐƯỜNG QUỸ ĐẠO VẼ GIĂNG NGANG CHÉO VÀ CÁC VIÊN HÀNH TINH SÁNG --- */
+    function createSpaceOrbitLines() {
+      const lineGroup = new THREE.Group();
+      
+      const orbitConfigs = [
+        { rx: 35, ry: 12, rotX: Math.PI / 6, rotY: Math.PI / 10, rotZ: -Math.PI / 7, nodes: 2 },
+        { rx: 45, ry: 16, rotX: -Math.PI / 4, rotY: Math.PI / 5, rotZ: Math.PI / 8, nodes: 3 },
+        { rx: 55, ry: 20, rotX: Math.PI / 3, rotY: -Math.PI / 4, rotZ: 0, nodes: 2 }
+      ];
+
+      orbitConfigs.forEach(cfg => {
+        const curve = new THREE.EllipseCurve(0, 0, cfg.rx, cfg.ry, 0, 2 * Math.PI, false, 0);
+        const points = curve.getPoints(140);
+        const geometry = new THREE.BufferGeometry().setFromPoints(points);
+        
+        const material = new THREE.LineBasicMaterial({
+          color: 0xffffff,
+          transparent: true,
+          opacity: 0.4
+        });
+
+        const line = new THREE.LineLoop(geometry, material);
+        line.rotation.x = cfg.rotX;
+        line.rotation.y = cfg.rotY;
+        line.rotation.z = cfg.rotZ;
+        lineGroup.add(line);
+
+        for (let i = 0; i < cfg.nodes; i++) {
+          const t = (i / cfg.nodes) + Math.random() * 0.2;
+          const pt = curve.getPoint(t);
+          
+          const nodeGeo = new THREE.SphereGeometry(0.45, 16, 16);
+          const nodeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+          const nodeMesh = new THREE.Mesh(nodeGeo, nodeMat);
+          
+          const pos = new THREE.Vector3(pt.x, pt.y, 0);
+          pos.applyAxisAngle(new THREE.Vector3(1, 0, 0), cfg.rotX);
+          pos.applyAxisAngle(new THREE.Vector3(0, 1, 0), cfg.rotY);
+          pos.applyAxisAngle(new THREE.Vector3(0, 0, 1), cfg.rotZ);
+
+          nodeMesh.position.copy(pos);
+          lineGroup.add(nodeMesh);
+          orbitLineNodes.push(nodeMesh);
+        }
+      });
+
+      scene.add(lineGroup);
+    }
+
+    /* --- SIÊU CẦU HOLOGRAPHIC GALAXY HỒNG RỰC RỠ (ĐÚNG 100% THEO MẪU) --- */
+    function createHolographicPlanet() {
+      const planetCanvas = document.createElement('canvas');
+      planetCanvas.width = 1024;
+      planetCanvas.height = 1024;
+      const ctx = planetCanvas.getContext('2d');
+
+      // 1. Phông nền Nền Hồng Galaxy đậm chiếm 70% diện tích bề mặt
+      const baseGrad = ctx.createLinearGradient(0, 0, 1024, 1024);
+      baseGrad.addColorStop(0.00, '#C2185B'); // Deep Magenta Pink
+      baseGrad.addColorStop(0.25, '#FF1493'); // Deep Pink
+      baseGrad.addColorStop(0.50, '#FF2A85'); // Vibrant Magenta Pink
+      baseGrad.addColorStop(0.75, '#E91E63'); // Vivid Pink
+      baseGrad.addColorStop(1.00, '#C2185B'); // Deep Pink
+
+      ctx.fillStyle = baseGrad;
+      ctx.fillRect(0, 0, 1024, 1024);
+
+      // 2. Mảng loang Hồng Rực Rỡ phủ rộng ở tâm
+      const rGradPink = ctx.createRadialGradient(512, 512, 30, 512, 512, 480);
+      rGradPink.addColorStop(0, 'rgba(255, 20, 147, 0.95)');
+      rGradPink.addColorStop(0.5, 'rgba(255, 42, 133, 0.85)');
+      rGradPink.addColorStop(1, 'rgba(233, 30, 99, 0.1)');
+      ctx.fillStyle = rGradPink;
+      ctx.beginPath(); ctx.arc(512, 512, 480, 0, Math.PI * 2); ctx.fill();
+
+      // 3. Mảng loang Vàng Nắng Cam Đào (#FFD54F) góc trên bên phải
+      const rGradYellow = ctx.createRadialGradient(820, 220, 20, 820, 220, 320);
+      rGradYellow.addColorStop(0, 'rgba(255, 213, 79, 0.95)');
+      rGradYellow.addColorStop(0.6, 'rgba(255, 179, 0, 0.4)');
+      rGradYellow.addColorStop(1, 'rgba(255, 179, 0, 0)');
+      ctx.fillStyle = rGradYellow;
+      ctx.beginPath(); ctx.arc(820, 220, 320, 0, Math.PI * 2); ctx.fill();
+
+      // 4. Mảng loang Xanh Mint Ngọc (#4DD0E1) góc dưới bên trái
+      const rGradMint = ctx.createRadialGradient(200, 820, 20, 200, 820, 280);
+      rGradMint.addColorStop(0, 'rgba(77, 208, 225, 0.9)');
+      rGradMint.addColorStop(0.6, 'rgba(0, 172, 193, 0.35)');
+      rGradMint.addColorStop(1, 'rgba(0, 172, 193, 0)');
+      ctx.fillStyle = rGradMint;
+      ctx.beginPath(); ctx.arc(200, 820, 280, 0, Math.PI * 2); ctx.fill();
+
+      // 5. Mảng loang Tím Cẩm Quỳ (#8E24AA) góc dưới bên phải
+      const rGradPurple = ctx.createRadialGradient(800, 800, 20, 800, 800, 320);
+      rGradPurple.addColorStop(0, 'rgba(142, 36, 170, 0.85)');
+      rGradPurple.addColorStop(0.6, 'rgba(106, 27, 154, 0.3)');
+      rGradPurple.addColorStop(1, 'rgba(106, 27, 154, 0)');
+      ctx.fillStyle = rGradPurple;
+      ctx.beginPath(); ctx.arc(800, 800, 320, 0, Math.PI * 2); ctx.fill();
+
+      // 6. Dải vân sóng lỏng cuộn dải ngân hà (liquid swirl)
+      ctx.fillStyle = 'rgba(255, 105, 180, 0.25)';
+      for (let i = 0; i < 16; i++) {
+        ctx.beginPath();
+        ctx.ellipse(
+          Math.random() * 1024, 
+          Math.random() * 1024, 
+          Math.random() * 320 + 100, 
+          Math.random() * 110 + 40, 
+          Math.random() * Math.PI, 0, Math.PI * 2
+        );
+        ctx.fill();
+      }
+
+      // 7. Vệt sáng Hồng Phấn pastel nhẹ nhàng (KHÔNG bị chói trắng)
+      const rGradWhite = ctx.createRadialGradient(350, 250, 10, 350, 250, 220);
+      rGradWhite.addColorStop(0, 'rgba(255, 230, 245, 0.55)');
+      rGradWhite.addColorStop(1, 'rgba(255, 230, 245, 0)');
+      ctx.fillStyle = rGradWhite;
+      ctx.beginPath(); ctx.arc(350, 250, 220, 0, Math.PI * 2); ctx.fill();
+
+      const texture = new THREE.CanvasTexture(planetCanvas);
+      const geometry = new THREE.SphereGeometry(3.6, 64, 64);
+      
+      const material = new THREE.MeshStandardMaterial({
+        map: texture,
+        roughness: 0.3,
+        metalness: 0.05,
+        emissive: 0x440022,
+        emissiveIntensity: 0.2,
+        transparent: true,
+        opacity: 0.98
+      });
+
+      planetMesh = new THREE.Mesh(geometry, material);
+      scene.add(planetMesh);
+
+      const auraGeo = new THREE.SphereGeometry(4.0, 32, 32);
+      const auraMat = new THREE.MeshBasicMaterial({
+        color: 0xff33aa,
+        transparent: true,
+        opacity: 0.25,
+        side: THREE.BackSide
+      });
+      auraMesh = new THREE.Mesh(auraGeo, auraMat);
+      scene.add(auraMesh);
+    }
+
+    /* --- 3 VÒNG ĐAI VĂN BẢN 3D --- */
+    function createTextTexture(text) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1024;
+      canvas.height = 128;
+      const ctx = canvas.getContext('2d');
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'Bold 40px Montserrat, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowColor = 'rgba(255, 182, 219, 0.9)';
+      ctx.shadowBlur = 10;
+
+      const repeated = text.repeat(3);
+      ctx.fillText(repeated, canvas.width / 2, canvas.height / 2);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.ClampToEdgeWrapping;
+      return texture;
+    }
+
+    function createTextRings() {
+      const ringConfigs = [
+        { text: CONFIG.ringText1, radius: 5.6, rotX: Math.PI / 3, rotY: Math.PI / 6 },
+        { text: CONFIG.ringText2, radius: 6.9, rotX: -Math.PI / 4, rotY: -Math.PI / 4 },
+        { text: CONFIG.ringText3, radius: 8.2, rotX: Math.PI / 2.2, rotY: -Math.PI / 8 }
+      ];
+
+      ringConfigs.forEach((cfg) => {
+        const texture = createTextTexture(cfg.text);
+        const geometry = new THREE.CylinderGeometry(cfg.radius, cfg.radius, 0.85, 64, 1, true);
+        const material = new THREE.MeshBasicMaterial({
+          map: texture,
+          transparent: true,
+          side: THREE.DoubleSide,
+          depthWrite: false,
+          opacity: 1
+        });
+
+        const ring = new THREE.Mesh(geometry, material);
+        ring.rotation.x = cfg.rotX;
+        ring.rotation.y = cfg.rotY;
+        
+        scene.add(ring);
+        ringMeshes.push({ mesh: ring, texture: texture });
+      });
+    }
+
+    /* --- TRÁI TIM HẠT THIÊN HÀ 3D (scale 0.42 KHÔNG CÓ QUẢ CẦU Ở TÂM) --- */
+    function initHeartParticles() {
+      const pCount = 5200;
+      const geometry = new THREE.BufferGeometry();
+      const currentPos = new Float32Array(pCount * 3);
+      const colors = new Float32Array(pCount * 3);
+
+      const pinkColor = new THREE.Color(0xff66cc);
+      const purpleColor = new THREE.Color(0xcc55ff);
+      const whiteColor = new THREE.Color(0xffffff);
+
+      const heartScale = 0.42;
+
+      for (let i = 0; i < pCount; i++) {
+        const u = Math.random();
+        const v = Math.random();
+        const theta = u * 2.0 * Math.PI;
+        const phi = Math.acos(2.0 * v - 1.0);
+        const r = 3.6 + Math.random() * 0.4;
+
+        currentPos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+        currentPos[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+        currentPos[i * 3 + 2] = r * Math.cos(phi);
+
+        const t = Math.PI * (2 * Math.random() - 1);
+        const hx = 16 * Math.pow(Math.sin(t), 3);
+        const hy = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
+        const hz = (Math.random() - 0.5) * 8;
+
+        const rand = Math.random();
+        const mixCol = rand > 0.4 ? pinkColor : (rand > 0.15 ? purpleColor : whiteColor);
+        colors[i * 3] = mixCol.r;
+        colors[i * 3 + 1] = mixCol.g;
+        colors[i * 3 + 2] = mixCol.b;
+
+        heartParticleData.push({
+          x: currentPos[i * 3], y: currentPos[i * 3 + 1], z: currentPos[i * 3 + 2],
+          tx: hx * heartScale, ty: hy * heartScale, tz: hz * 0.25,
+          vx: (Math.random() - 0.5) * 0.6,
+          vy: (Math.random() - 0.5) * 0.6,
+          vz: (Math.random() - 0.5) * 0.6,
+          speed: 0.03 + Math.random() * 0.035
+        });
+      }
+
+      geometry.setAttribute('position', new THREE.BufferAttribute(currentPos, 3));
+      geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+      const mat = new THREE.PointsMaterial({
+        size: 0.22,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0,
+        blending: THREE.AdditiveBlending
+      });
+
+      particleSystem = new THREE.Points(geometry, mat);
+      scene.add(particleSystem);
+    }
+
+    /* =========================================================================
+       4. TƯƠNG TÁC CHUYỂN BƯỚC BẮT CLICK / TAP
+       ========================================================================= */
+    function setupGlobalInteractionListeners() {
+      let pointerStart = { x: 0, y: 0 };
+      let isDrag = false;
+
+      window.addEventListener('pointerdown', (e) => {
+        isDrag = false;
+        pointerStart = { x: e.clientX, y: e.clientY };
+      });
+
+      window.addEventListener('pointermove', (e) => {
+        if (Math.hypot(e.clientX - pointerStart.x, e.clientY - pointerStart.y) > 8) {
+          isDrag = true;
+        }
+      });
+
+      window.addEventListener('pointerup', (e) => {
+        if (isDrag) return;
+        if (currentStep === 4) return;
+
+        if (currentStep === 1 && !isTransitioning) {
+          triggerBurstAndGoToStep(2);
+        } else if (currentStep === 2 && !isTransitioning) {
+          triggerBurstAndGoToStep(3);
+        }
+      });
+
+      document.getElementById('hint-banner').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (currentStep === 1 && !isTransitioning) {
+          triggerBurstAndGoToStep(2);
+        } else if (currentStep === 2 && !isTransitioning) {
+          triggerBurstAndGoToStep(3);
+        }
+      });
+    }
+
+    function triggerBurstAndGoToStep(targetStep) {
+      isTransitioning = true;
+
+      if (currentStep === 1) {
+        heartParticleData.forEach(p => {
+          p.x = (Math.random() - 0.5) * 4;
+          p.y = (Math.random() - 0.5) * 4;
+          p.z = (Math.random() - 0.5) * 4;
+          p.speed = 0.05 + Math.random() * 0.04;
+        });
+        particleSystem.material.opacity = 1;
+      } else if (currentStep === 2) {
+        heartParticleData.forEach(p => {
+          p.tx *= 2.5;
+          p.ty *= 2.5;
+          p.tz *= 2.5;
+          p.speed = 0.08;
+        });
+      }
+
+      setTimeout(() => {
+        goToStep(targetStep);
+        isTransitioning = false;
+      }, 450);
+    }
+
+    /* =========================================================================
+       5. QUẢN LÝ QUY TRÌNH CHUYỂN CẢNH (STEP SYSTEM)
+       ========================================================================= */
+    function goToStep(targetStep) {
+      currentStep = targetStep;
+
+      const hint = document.getElementById('hint-banner');
+      const hintText = document.getElementById('hint-text');
+      const hintSubtext = document.getElementById('hint-subtext');
+      const glitterStage = document.getElementById('glitter-stage');
+      const envelopeModal = document.getElementById('envelope-modal');
+      const stage3a = document.getElementById('stage-3a');
+      const stage3b = document.getElementById('stage-3b');
+
+      if (targetStep === 1) {
+        planetMesh.visible = true;
+        planetMesh.material.opacity = 1;
+        auraMesh.visible = true;
+        auraMesh.material.opacity = 0.25;
+        ringMeshes.forEach(r => { r.mesh.visible = true; r.mesh.material.opacity = 1; });
+        particleSystem.material.opacity = 0;
+        
+        hintText.innerText = "Chạm Vào Màn Hình Để Bắt Đầu";
+        hintSubtext.innerText = "(Xoay 360° & Phóng to / Thu nhỏ tự do)";
+        hint.style.display = 'block';
+        hint.style.opacity = '1';
+
+        glitterStage.style.opacity = '0';
+        envelopeModal.style.opacity = '0';
+        envelopeModal.classList.add('pointer-events-none');
+        stopFloatingHearts();
+      } 
+      else if (targetStep === 2) {
+        // Cảnh Trái Tim 3D
+        planetMesh.visible = false;
+        auraMesh.visible = false;
+        ringMeshes.forEach(r => r.mesh.visible = false);
+
+        // Reset vị trí hạt về trái tim kích thước 0.42
+        const heartScale = 0.42;
+        heartParticleData.forEach(p => {
+          const t = Math.PI * (2 * Math.random() - 1);
+          const hx = 16 * Math.pow(Math.sin(t), 3);
+          const hy = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
+          const hz = (Math.random() - 0.5) * 8;
+          p.tx = hx * heartScale;
+          p.ty = hy * heartScale;
+          p.tz = hz * 0.25;
+          p.speed = 0.038 + Math.random() * 0.03;
+        });
+
+        particleSystem.material.opacity = 1.0;
+
+        hintText.innerText = "💖 Chạm vào trái tim hoặc màn hình để mở lời chúc 💖";
+        hintSubtext.innerText = "(Xoay 360° & Phóng to / Thu nhỏ trái tim tự do)";
+        hint.style.display = 'block';
+        hint.style.opacity = '1';
+
+        glitterStage.style.opacity = '0';
+        envelopeModal.style.opacity = '0';
+        envelopeModal.classList.add('pointer-events-none');
+        stopFloatingHearts();
+      } 
+      else if (targetStep === 3) {
+        // Cảnh Lời Chúc Kim Tuyến
+        hint.style.opacity = '0';
+        setTimeout(() => { if (currentStep === 3) hint.style.display = 'none'; }, 300);
+
+        planetMesh.visible = false;
+        auraMesh.visible = false;
+        ringMeshes.forEach(r => r.mesh.visible = false);
+
+        particleSystem.material.opacity = 0.75;
+
+        glitterStage.style.opacity = '1';
+
+        if (!stage3b.classList.contains('hidden') && stage3b.style.opacity === '1') {
+          stage3a.classList.add('hidden');
+        } else {
+          stage3a.style.opacity = '1';
+          stage3a.classList.remove('hidden');
+          stage3b.classList.add('hidden');
+          stage3b.style.opacity = '0';
+
+          setTimeout(() => {
+            if (currentStep === 3 || currentStep === 4) {
+              stage3a.style.opacity = '0';
+              setTimeout(() => {
+                stage3a.classList.add('hidden');
+                stage3b.classList.remove('hidden');
+                stage3b.classList.add('flex');
+                setTimeout(() => stage3b.style.opacity = '1', 50);
+              }, 400);
+            }
+          }, CONFIG.senderStayTime);
+        }
+
+        envelopeModal.style.opacity = '0';
+        envelopeModal.classList.add('pointer-events-none');
+        stopFloatingHearts();
+      } 
+      else if (targetStep === 4) {
+        // Bước 4: Mở Phong Thư
+        hint.style.display = 'none';
+        glitterStage.style.opacity = '0.3';
+        particleSystem.material.opacity = 0.45;
+
+        envelopeModal.classList.remove('pointer-events-none');
+        envelopeModal.classList.add('pointer-events-auto');
+        envelopeModal.style.opacity = '1';
+      }
+    }
+
+    /* =========================================================================
+       6. HỆ THỐNG PHONG BÌ THƯ NẮP TAM GIÁC GẬP NẾP 3D MỞ / ĐÓNG VỀ CẢNH TRÁI TIM
+       ========================================================================= */
+    
+    function startFloatingHearts() {
+      stopFloatingHearts();
+      const container = document.getElementById('floating-hearts-container');
+      const symbols = ['💖', '💕', '💗', '💓', '🌸', '✨'];
+
+      floatingHeartInterval = setInterval(() => {
+        const heart = document.createElement('div');
+        heart.className = 'floating-heart-particle';
+        heart.innerText = symbols[Math.floor(Math.random() * symbols.length)];
+        heart.style.left = Math.random() * 95 + '%';
+        heart.style.animationDuration = (3.8 + Math.random() * 2.5) + 's';
+        heart.style.fontSize = (14 + Math.random() * 16) + 'px';
+        container.appendChild(heart);
+
+        setTimeout(() => {
+          if (heart.parentNode) heart.parentNode.removeChild(heart);
+        }, 6500);
+      }, 280);
+    }
+
+    function stopFloatingHearts() {
+      if (floatingHeartInterval) {
+        clearInterval(floatingHeartInterval);
+        floatingHeartInterval = null;
+      }
+      const container = document.getElementById('floating-hearts-container');
+      if (container) container.innerHTML = '';
+    }
+
+    /* Quy trình TỰ ĐỘNG MỞ THƯ khi ấn "Xem Thư Tình Yêu" */
+    function startAutoOpenEnvelopeProcess() {
+      goToStep(4);
+      startFloatingHearts();
+
+      const envelopeWrapper = document.getElementById('envelope-wrapper');
+      const flap = document.getElementById('envelope-flap');
+      const seal = document.getElementById('envelope-seal');
+      const letterPreview = document.getElementById('inner-letter-preview');
+      const letterCard = document.getElementById('letter-card');
+
+      // Reset phong bì thư ở trạng thái gập nắp kín xuống phía trước
+      if (envelopeWrapper) {
+        envelopeWrapper.style.display = 'block';
+        envelopeWrapper.style.transform = 'scale(1) translateY(0)';
+        envelopeWrapper.style.opacity = '1';
+      }
+      if (flap) flap.classList.remove('open'); // rotateX(0deg) úp từ trên xuống
+      if (seal) {
+        seal.style.transform = 'scale(1) rotate(0deg)';
+        seal.style.opacity = '1';
+      }
+      if (letterPreview) letterPreview.classList.remove('slide-up');
+      if (letterCard) {
+        letterCard.classList.add('hidden');
+        letterCard.style.display = 'none';
+        letterCard.style.opacity = '0';
+        letterCard.style.transform = 'scale(0.9)';
+      }
+
+      // 1. TỰ ĐỘNG MỞ NẮP TAM GIÁC LẬT NGƯỢC NẾP RA PHÍA SAU (rotateX: 180deg)
+      setTimeout(() => {
+        if (flap) flap.classList.add('open');
+        if (seal) {
+          seal.style.transform = 'scale(0) rotate(180deg)';
+          seal.style.opacity = '0';
+        }
+
+        // 2. LÁ THƯ TỪ TỪ TRỒI LÊN KHỎI PHONG BÌ
+        setTimeout(() => {
+          if (letterPreview) letterPreview.classList.add('slide-up');
+
+          // 3. MỞ RỘNG THÀNH THIỆP CHÚC MỪNG 20/10
+          setTimeout(() => {
+            if (envelopeWrapper) {
+              envelopeWrapper.style.transform = 'scale(0.8) translateY(30px)';
+              envelopeWrapper.style.opacity = '0';
+            }
+
+            setTimeout(() => {
+              if (envelopeWrapper) envelopeWrapper.style.display = 'none';
+
+              if (letterCard) {
+                letterCard.classList.remove('hidden');
+                letterCard.style.display = 'block';
+
+                requestAnimationFrame(() => {
+                  letterCard.style.transform = 'scale(1)';
+                  letterCard.style.opacity = '1';
+                });
+              }
+            }, 300);
+          }, 800);
+
+        }, 550);
+
+      }, 350);
+    }
+
+    /* Quy trình GẬP THƯ & ĐÓNG NẮP TAM GIÁC TRỞ VỀ CẢNH TRÁI TIM */
+    function autoCloseEnvelopeAndReturnToHeart(e) {
+      if (e) e.stopPropagation();
+
+      const envelopeModal = document.getElementById('envelope-modal');
+      const letterCard = document.getElementById('letter-card');
+      const envelopeWrapper = document.getElementById('envelope-wrapper');
+      const flap = document.getElementById('envelope-flap');
+      const seal = document.getElementById('envelope-seal');
+      const letterPreview = document.getElementById('inner-letter-preview');
+
+      // 1. Thu nhỏ thiệp chúc mừng
+      if (letterCard) {
+        letterCard.style.transform = 'scale(0.85)';
+        letterCard.style.opacity = '0';
+      }
+
+      setTimeout(() => {
+        if (letterCard) {
+          letterCard.classList.add('hidden');
+          letterCard.style.display = 'none';
+        }
+
+        // 2. Hiện lại phong thư với nắp đang mở
+        if (envelopeWrapper) {
+          envelopeWrapper.style.display = 'block';
+          requestAnimationFrame(() => {
+            envelopeWrapper.style.transform = 'scale(1) translateY(0)';
+            envelopeWrapper.style.opacity = '1';
+          });
+        }
+
+        // 3. Đút lá thư chui ngược lại vào phong bì
+        setTimeout(() => {
+          if (letterPreview) letterPreview.classList.remove('slide-up');
+
+          // 4. GẬP NẮP TAM GIÁC TỪ SAU RA TRƯỚC (ÚP XUỐNG ĐÚNG NẾP MẸP PHONG BÌ)
+          setTimeout(() => {
+            if (flap) flap.classList.remove('open');
+            if (seal) {
+              seal.style.transform = 'scale(1) rotate(0deg)';
+              seal.style.opacity = '1';
+            }
+
+            // 5. Mượt mà trở về Cảnh Trái Tim Thiên Hà 3D
+            setTimeout(() => {
+              if (envelopeModal) {
+                envelopeModal.style.opacity = '0';
+                envelopeModal.classList.remove('pointer-events-auto');
+                envelopeModal.classList.add('pointer-events-none');
+              }
+              stopFloatingHearts();
+              goToStep(2); // Trở về Cảnh Trái Tim 3D
+            }, 500);
+
+          }, 350);
+
+        }, 250);
+
+      }, 350);
+    }
+
+    /* =========================================================================
+       7. ANIMATION LOOP & RESIZE
+       ========================================================================= */
+    function animate() {
+      requestAnimationFrame(animate);
+
+      // Cập nhật OrbitControls
+      controls.update();
+
+      if (planetMesh && planetMesh.visible) {
+        planetMesh.rotation.y += 0.004;
+        
+        ringMeshes.forEach((r, idx) => {
+          r.mesh.rotation.z += (idx + 1) * 0.002;
+          r.texture.offset.x -= 0.0025;
+        });
+      }
+
+      if (currentStep >= 2 && particleSystem) {
+        const positions = particleSystem.geometry.attributes.position.array;
+
+        for (let i = 0; i < heartParticleData.length; i++) {
+          const p = heartParticleData[i];
+          p.x += (p.tx - p.x) * p.speed;
+          p.y += (p.ty - p.y) * p.speed;
+          p.z += (p.tz - p.z) * p.speed;
+
+          positions[i * 3] = p.x;
+          positions[i * 3 + 1] = p.y;
+          positions[i * 3 + 2] = p.z;
+        }
+
+        particleSystem.geometry.attributes.position.needsUpdate = true;
+        particleSystem.rotation.y += 0.003;
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    window.onload = () => {
+      initThreeJS();
+    };
+  </script>
+</body>
+</html>
